@@ -85,7 +85,6 @@
 
     <div id="error"></div>
 
-
     <!-- AI ANALYSIS -->
 
     <div id="result" class="section">
@@ -118,7 +117,6 @@
 
     </div>
 
-
     <!-- SUBMITTED -->
 
     <div id="submitted" class="section">
@@ -136,7 +134,6 @@
         </p>
 
     </div>
-
 
     <!-- STATUS CHECK -->
 
@@ -159,10 +156,15 @@
 
 </div>
 
-
 <script>
 
 let complaintData = {};
+
+/* =========================
+   RENDER BACKEND URL
+========================= */
+
+const API_URL = "YOUR-RENDER-URL";
 
 
 /* =========================
@@ -187,7 +189,7 @@ async function analyzeComplaint() {
     try {
 
         const response = await fetch(
-            "http://192.0.0.4:5000/analyze",
+            API_URL + "/analyze",
             {
                 method: "POST",
 
@@ -249,7 +251,7 @@ async function submitComplaint() {
     try {
 
         const response = await fetch(
-            "http://192.0.0.4:5000/submit",
+            API_URL + "/submit",
             {
                 method: "POST",
 
@@ -314,7 +316,7 @@ async function checkStatus() {
     try {
 
         const response = await fetch(
-            "http://192.0.0.4:5000/status/" +
+            API_URL + "/status/" +
             encodeURIComponent(complaintId)
         );
 
