@@ -12,7 +12,10 @@ CORS(app)
 DATABASE = "complaints.db"
 
 # 🔐 Paste your Gemini API key here
-GEMINI_API_KEY = "PASTE_YOUR_API_KEY_HERE"
+GEMINI_API_KEY =
+import os
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 GEMINI_URL = (
     "https://generativelanguage.googleapis.com/"
