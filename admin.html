@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+    margin:0;
+    padding:15px;
+    font-family:Arial,sans-serif;
+    background:#f4f6ff;
+}
+
+.container{
+    max-width:1100px;
+    margin:auto;
+}
+
+h1{
+    text-align:center;
+    font-size:24px;
+    margin:15px 0 25px;
+}
+
+.dashboard{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    margin-bottom:20px;
+}
+
+.box{
+    background:white;
+    padding:18px;
+    border-radius:12px;
+    text-align:center;
+    box-shadow:0 3px 10px #ddd;
+}
+
+.box h2{
+    margin:0;
+    font-size:28px;
+}
+
+.box p{
+    margin:7px 0 0;
+}
+
+button{
+    border:0;
+    border-radius:8px;
+    padding:10px 15px;
+    background:#5146e5;
+    color:white;
+    font-size:15px;
+}
+
+.refresh{
+    display:block;
+    margin:0 auto 20px;
+}
+
+.complaint{
+    background:white;
+    padding:18px;
+    margin-bottom:15px;
+    border-radius:12px;
+    box-shadow:0 3px 10px #ddd;
+}
+
+.complaint h3{
+    margin-top:0;
+}
+
+.row{
+    margin:8px 0;
+}
+
+.label{
+    font-weight:bold;
+}
+
+select{
+    padding:9px;
+    border:1px solid #ccc;
+    border-radius:7px;
+    margin-right:8px;
+}
+
+.update{
+    margin-top:8px;
+}
+
+.message{
+    text-align:center;
+    padding:20px;
+}
+
+@media(max-width:700px){
+    .dashboard{
+        grid-template-columns:1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🤖 AI-BASED COMPLAINT RESOLUTION AGENT</h1>
+
+<div class="dashboard">
+
+<div class="box">
+<h2 id="total">0</h2>
+<p>Total Complaints</p>
+</div>
+
+<div class="box">
+<h2 id="high">0</h2>
+<p>High Priority</p>
+</div>
+
+<div class="box">
+<h2 id="resolved">0</h2>
+<p>Resolved</p>
+</div>
+
+</div>
+
+<button class="refresh" onclick="loadComplaints()">
+🔄 Refresh
+</button>
+
+<div id="list">
+<div class="message">Loading...</div>
+</div>
+
+</div>
+
+<script>
+
+const API = "http://192.0.0.4:5000";
+
+async function loadComplaints(){
+
+    const list = document.getElementById("list");
+
+    try{
+
+        const response = await fetch(API + "/admin/complaints");
+
+        const data = await response.json();
+
+        document.getElementById("total").textContent = data.length;
+
+        document.getElementById("high").textContent =
+            data.filter(x => x.priority === "High").length;
+
+        document.getElementById("resolved").textContent =
+            data.filter(x => x.status === "Resolved").length;
+
+        if(data.length === 0){
+            list.innerHTML =
+                '<div class="message">No complaints found.</div>';
+            return;
+        }
+
+        list.innerHTML = "";
+
+        data.forEach(item => {
+
+            const card = document.createElement("div");
+
+            card.className = "complaint";
+
+            card.innerHTML = `
+
+                <h3>🆔 ${item.complaint_id}</h3>
+
+                <div class="row">
+                    <span class="label">Complaint:</span>
+                    ${item.complaint}
+                </div>
+
+                <div class="row">
+                    <span class="label">Category:</span>
+                    ${item.category}
+                </div>
+
+                <div class="row">
+                    <span class="label">Priority:</span>
+                    ${item.priority}
+                </div>
+
+                <div class="row">
+                    <span class="label">Department:</span>
+                    ${item.department}
+                </div>
+
+                <div class="row">
+                    <span class="label">Resolution:</span>
+                    ${item.resolution}
+                </div>
+
+                <div class="row">
+                    <span class="label">Current Status:</span>
+                    ${item.status}
+                </div>
+
+                <div class="update">
+
+                    <select id="status-${item.complaint_id}">
+
+                        <option value="Submitted"
+                        ${item.status === "Submitted" ? "selected" : ""}>
+                        Submitted
+                        </option>
+
+                        <option value="In Progress"
+                        ${item.status === "In Progress" ? "selected" : ""}>
+                        In Progress
+                        </option>
+
+                        <option value="Resolved"
+                        ${item.status === "Resolved" ? "selected" : ""}>
+                        Resolved
+                        </option>
+
+                    </select>
+
+                    <button onclick="updateStatus('${item.complaint_id}')">
+                        Update Status
+                    </button>
+
+                </div>
+            `;
+
+            list.appendChild(card);
+        });
+
+    }catch(error){
+
+        list.innerHTML =
+        '<div class="message">❌ Backend connection failed.</div>';
+
+    }
+}
+
+
+async function updateStatus(complaintId){
+
+    const select =
+        document.getElementById("status-" + complaintId);
+
+    const newStatus = select.value;
+
+    try{
+
+        const response = await fetch(
+            API + "/admin/update-status",
+            {
+                method:"POST",
+
+                headers:{
+                    "Content-Type":"application/json"
+                },
+
+                body:JSON.stringify({
+                    complaint_id:complaintId,
+                    status:newStatus
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if(response.ok){
+
+            alert("✅ Status Updated!");
+
+            loadComplaints();
+
+        }else{
+
+            alert("❌ " + result.error);
+
+        }
+
+    }catch(error){
+
+        alert("❌ Backend connection failed.");
+
+    }
+}
+
+
+loadComplaints();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI-BASED COMPLAINT RESOLUTION AGENT</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f5ff;
+            padding: 20px;
+        }
+
+        .box {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        textarea,
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            font-size: 15px;
+        }
+
+        textarea {
+            height: 120px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 12px;
+            border: none;
+            border-radius: 10px;
+            background: #4f46e5;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        #result,
+        #submitted {
+            display: none;
+        }
+
+        #error {
+            color: red;
+            margin-top: 15px;
+        }
+
+        #statusResult {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+
+    <h2>🤖 AI-BASED COMPLAINT RESOLUTION AGENT</h2>
+
+    <textarea id="complaint"
+        placeholder="Enter your complaint..."></textarea>
+
+    <button onclick="analyzeComplaint()">
+        🔍 Analyze Complaint
+    </button>
+
+    <div id="error"></div>
+
+
+    <!-- AI ANALYSIS -->
+
+    <div id="result" class="section">
+
+        <h3>🤖 AI Analysis Result</h3>
+
+        <p>
+            <b>Category:</b>
+            <span id="category"></span>
+        </p>
+
+        <p>
+            <b>Priority:</b>
+            <span id="priority"></span>
+        </p>
+
+        <p>
+            <b>Department:</b>
+            <span id="department"></span>
+        </p>
+
+        <p>
+            <b>Suggested Resolution:</b>
+            <span id="resolution"></span>
+        </p>
+
+        <button onclick="submitComplaint()">
+            📤 Submit Complaint
+        </button>
+
+    </div>
+
+
+    <!-- SUBMITTED -->
+
+    <div id="submitted" class="section">
+
+        <h3>✅ Complaint Submitted</h3>
+
+        <p>
+            <b>Complaint ID:</b>
+            <span id="complaintId"></span>
+        </p>
+
+        <p>
+            <b>Status:</b>
+            <span id="complaintStatus"></span>
+        </p>
+
+    </div>
+
+
+    <!-- STATUS CHECK -->
+
+    <div class="section">
+
+        <h3>🔎 Check Complaint Status</h3>
+
+        <input
+            type="text"
+            id="statusId"
+            placeholder="Enter Complaint ID">
+
+        <button onclick="checkStatus()">
+            🔎 Check Status
+        </button>
+
+        <div id="statusResult"></div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+let complaintData = {};
+
+
+/* =========================
+   ANALYZE
+========================= */
+
+async function analyzeComplaint() {
+
+    const complaint =
+        document.getElementById("complaint").value.trim();
+
+    document.getElementById("error").innerText = "";
+
+    if (complaint === "") {
+
+        document.getElementById("error").innerText =
+            "Please enter your complaint.";
+
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            "http://192.0.0.4:5000/analyze",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    complaint: complaint
+                })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                "Server error: " + response.status
+            );
+        }
+
+        const data = await response.json();
+
+        complaintData = {
+            complaint: complaint,
+            category: data.category,
+            priority: data.priority,
+            department: data.department,
+            resolution: data.resolution
+        };
+
+        document.getElementById("category").innerText =
+            data.category;
+
+        document.getElementById("priority").innerText =
+            data.priority;
+
+        document.getElementById("department").innerText =
+            data.department;
+
+        document.getElementById("resolution").innerText =
+            data.resolution;
+
+        document.getElementById("result").style.display =
+            "block";
+
+    } catch (error) {
+
+        document.getElementById("error").innerText =
+            "❌ Error: " + error.message;
+    }
+}
+
+
+/* =========================
+   SUBMIT
+========================= */
+
+async function submitComplaint() {
+
+    try {
+
+        const response = await fetch(
+            "http://192.0.0.4:5000/submit",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify(complaintData)
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                "Server error: " + response.status
+            );
+        }
+
+        const data = await response.json();
+
+        document.getElementById("complaintId").innerText =
+            data.complaint_id;
+
+        document.getElementById("complaintStatus").innerText =
+            data.status;
+
+        document.getElementById("submitted").style.display =
+            "block";
+
+        document.getElementById("statusId").value =
+            data.complaint_id;
+
+    } catch (error) {
+
+        document.getElementById("error").innerText =
+            "❌ Submit failed: " + error.message;
+    }
+}
+
+
+/* =========================
+   CHECK STATUS
+========================= */
+
+async function checkStatus() {
+
+    const complaintId =
+        document.getElementById("statusId").value.trim();
+
+    const statusResult =
+        document.getElementById("statusResult");
+
+    statusResult.innerHTML = "";
+
+    if (complaintId === "") {
+
+        statusResult.innerHTML =
+            "<p style='color:red;'>Please enter Complaint ID.</p>";
+
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            "http://192.0.0.4:5000/status/" +
+            encodeURIComponent(complaintId)
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error || "Complaint not found"
+            );
+        }
+
+        statusResult.innerHTML = `
+
+            <hr>
+
+            <p>
+                <b>Complaint ID:</b>
+                ${data.complaint_id}
+            </p>
+
+            <p>
+                <b>Category:</b>
+                ${data.category}
+            </p>
+
+            <p>
+                <b>Priority:</b>
+                ${data.priority}
+            </p>
+
+            <p>
+                <b>Department:</b>
+                ${data.department}
+            </p>
+
+            <p>
+                <b>Resolution:</b>
+                ${data.resolution}
+            </p>
+
+            <p>
+                <b>Status:</b>
+                ${data.status}
+            </p>
+
+        `;
+
+    } catch (error) {
+
+        statusResult.innerHTML =
+            "<p style='color:red;'>❌ " +
+            error.message +
+            "</p>";
+    }
+}
+
+</script>
+
+</body>
+</html>
