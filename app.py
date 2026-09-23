@@ -7,13 +7,11 @@ import urllib.request
 import urllib.error
 
 app = Flask(__name__)
+import os
+
 CORS(app)
 
 DATABASE = "complaints.db"
-
-# 🔐 Paste your Gemini API key here
-GEMINI_API_KEY =
-import os
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
@@ -21,7 +19,6 @@ GEMINI_URL = (
     "https://generativelanguage.googleapis.com/"
     "v1beta/models/gemini-3.8-flash:generateContent"
 )
-
 
 def init_database():
 
