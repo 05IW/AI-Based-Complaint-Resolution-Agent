@@ -16,8 +16,7 @@ DATABASE = "complaints.db"
 # GEMINI CONFIGURATION
 # =========================
 
-GEMINI_API_KEY =
-os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 GEMINI_URL = (
     "https://generativelanguage.googleapis.com/"
@@ -25,13 +24,11 @@ GEMINI_URL = (
 )
 
 
-
 # =========================
 # DATABASE
 # =========================
 
 def init_database():
-
     conn = sqlite3.connect(DATABASE)
 
     conn.execute("""
@@ -60,7 +57,6 @@ init_database()
 
 @app.route("/")
 def home():
-
     return "AI-BASED COMPLAINT RESOLUTION AGENT BACKEND IS RUNNING!"
 
 
@@ -135,7 +131,6 @@ Do not add explanations outside JSON.
         )
 
         with urllib.request.urlopen(req, timeout=60) as response:
-
             result = json.loads(
                 response.read().decode("utf-8")
             )
@@ -161,7 +156,6 @@ Do not add explanations outside JSON.
                 "error": "Empty AI response"
             }), 500
 
-        # Remove markdown code blocks if Gemini adds them
         if ai_text.startswith("```"):
             ai_text = ai_text.replace("```json", "")
             ai_text = ai_text.replace("```", "")
@@ -174,17 +168,14 @@ Do not add explanations outside JSON.
                 "category",
                 "General Issue"
             ),
-
             "priority": ai_result.get(
                 "priority",
                 "Medium"
             ),
-
             "department": ai_result.get(
                 "department",
                 "Customer Support"
             ),
-
             "resolution": ai_result.get(
                 "resolution",
                 "Our support team will review your complaint."
@@ -294,7 +285,6 @@ def status(complaint_id):
     conn.close()
 
     if row is None:
-
         return jsonify({
             "error": "Complaint ID not found"
         }), 404
@@ -374,7 +364,6 @@ def update_status():
     ]
 
     if new_status not in allowed_status:
-
         return jsonify({
             "error": "Invalid status"
         }), 400
@@ -397,7 +386,6 @@ def update_status():
     conn.close()
 
     if updated == 0:
-
         return jsonify({
             "error": "Complaint ID not found"
         }), 404
