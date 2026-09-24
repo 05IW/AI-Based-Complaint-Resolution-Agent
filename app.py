@@ -5,20 +5,28 @@ import random
 import json
 import urllib.request
 import urllib.error
-
-app = Flask(__name__)
 import os
 
+app = Flask(__name__)
 CORS(app)
 
 DATABASE = "complaints.db"
+
+# =========================
+# GEMINI CONFIGURATION
+# =========================
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 GEMINI_URL = (
     "https://generativelanguage.googleapis.com/"
-    "v1beta/models/gemini-3.8-flash:generateContent"
+    "v1beta/models/gemini-2.5-flash:generateContent"
 )
+
+
+# =========================
+# DATABASE
+# =========================
 
 def init_database():
 
@@ -44,6 +52,10 @@ def init_database():
 init_database()
 
 
+# =========================
+# HOME
+# =========================
+
 @app.route("/")
 def home():
 
@@ -51,7 +63,7 @@ def home():
 
 
 # =========================
-# 🤖 REAL GEMINI AI ANALYSIS
+# AI ANALYSIS
 # =========================
 
 @app.route("/analyze", methods=["POST"])
@@ -71,10 +83,15 @@ def analyze():
             "error": "Please enter a complaint"
         }), 400
 
+    if not GEMINI_API_KEY:
+        return jsonify({
+            "error": "GEMINI_API_KEY is not configured"
+        }), 500
+
     prompt = f"""
 You are an AI Complaint Resolution Agent.
 
-Analyze the following customer complaint:
+Analyze this customer complaint:
 
 {complaint}
 
@@ -121,11 +138,28 @@ Do not add explanations outside JSON.
                 response.read().decode("utf-8")
             )
 
-        ai_text = result["candidates"][0]["content"]["parts"][0]["text"]
+        candidates = result.get("candidates", [])
 
-        # Remove possible markdown formatting
-        ai_text = ai_text.strip()
+        if not candidates:
+            return jsonify({
+                "error": "Gemini did not return an AI response",
+                "details": result
+            }), 500
 
+        ai_text = (
+            candidates[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+            .strip()
+        )
+
+        if not ai_text:
+            return jsonify({
+                "error": "Empty AI response"
+            }), 500
+
+        # Remove markdown code blocks if Gemini adds them
         if ai_text.startswith("```"):
             ai_text = ai_text.replace("```json", "")
             ai_text = ai_text.replace("```", "")
@@ -164,6 +198,15 @@ Do not add explanations outside JSON.
         return jsonify({
             "error": "Gemini AI API error",
             "details": error_message
+        }), 500
+
+    except json.JSONDecodeError as e:
+
+        print("JSON Error:", str(e))
+
+        return jsonify({
+            "error": "Invalid AI response format",
+            "details": str(e)
         }), 500
 
     except Exception as e:
@@ -370,8 +413,10 @@ def update_status():
 
 if __name__ == "__main__":
 
+    port = int(os.environ.get("PORT", 5000))
+
     app.run(
         host="0.0.0.0",
-        port=5000,
+        port=port,
         debug=False
     )
