@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,10 +8,15 @@
     <title>AI-BASED COMPLAINT RESOLUTION AGENT</title>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Arial, sans-serif;
             background: #f2f5ff;
             padding: 20px;
+            margin: 0;
         }
 
         .box {
@@ -19,6 +25,12 @@
             background: white;
             padding: 20px;
             border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
         }
 
         textarea,
@@ -29,10 +41,17 @@
             border: 1px solid #ccc;
             border-radius: 10px;
             font-size: 15px;
+            outline: none;
         }
 
         textarea {
             height: 120px;
+            resize: vertical;
+        }
+
+        textarea:focus,
+        input:focus {
+            border-color: #4f46e5;
         }
 
         button {
@@ -45,6 +64,19 @@
             color: white;
             font-size: 16px;
             font-weight: bold;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            opacity: 0.95;
+        }
+
+        button:disabled {
+            opacity: 0.75;
+            cursor: wait;
+            transform: scale(0.98);
         }
 
         .section {
@@ -67,313 +99,578 @@
         #statusResult {
             margin-top: 15px;
         }
+
+        /* =========================
+           PROFESSIONAL AI LOADING
+        ========================= */
+
+        .analyze-loading {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .ai-spinner {
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: aiSpin 0.8s linear infinite;
+        }
+
+        @keyframes aiSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* AI processing message */
+
+        .ai-processing {
+            display: none;
+            margin-top: 15px;
+            padding: 13px;
+            border-radius: 10px;
+            background: #eef2ff;
+            color: #3730a3;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .ai-dots span {
+            animation: blink 1.4s infinite;
+        }
+
+        .ai-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .ai-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+            0%,
+            60%,
+            100% {
+                opacity: 0.2;
+            }
+
+            30% {
+                opacity: 1;
+            }
+        }
+
+        /* Result animation */
+
+        .result-show {
+            animation: resultAppear 0.35s ease;
+        }
+
+        @keyframes resultAppear {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
 <body>
 
-<div class="box">
+    <div class="box">
 
-    <h2>🤖 AI-BASED COMPLAINT RESOLUTION AGENT</h2>
+        <h2>🤖 AI-BASED COMPLAINT RESOLUTION AGENT</h2>
 
-    <textarea id="complaint"
-        placeholder="Enter your complaint..."></textarea>
+        <textarea
+            id="complaint"
+            placeholder="Enter your complaint..."></textarea>
 
-    <button onclick="analyzeComplaint()">
-        🔍 Analyze Complaint
-    </button>
+        <!-- ANALYZE BUTTON -->
 
-    <div id="error"></div>
+        <button id="analyzeBtn" onclick="analyzeComplaint()">
 
-    <!-- AI ANALYSIS -->
+            <span id="analyzeNormal">
+                🤖 Analyze Complaint
+            </span>
 
-    <div id="result" class="section">
+            <span id="analyzeLoading"
+                class="analyze-loading"
+                style="display:none;">
 
-        <h3>🤖 AI Analysis Result</h3>
+                <span class="ai-spinner"></span>
+                AI is analyzing...
 
-        <p>
-            <b>Category:</b>
-            <span id="category"></span>
-        </p>
+            </span>
 
-        <p>
-            <b>Priority:</b>
-            <span id="priority"></span>
-        </p>
-
-        <p>
-            <b>Department:</b>
-            <span id="department"></span>
-        </p>
-
-        <p>
-            <b>Suggested Resolution:</b>
-            <span id="resolution"></span>
-        </p>
-
-        <button onclick="submitComplaint()">
-            📤 Submit Complaint
         </button>
 
-    </div>
+        <!-- AI PROCESSING MESSAGE -->
 
-    <!-- SUBMITTED -->
+        <div id="aiProcessing" class="ai-processing">
 
-    <div id="submitted" class="section">
+            🧠 AI is analyzing your complaint
+            <span class="ai-dots">
+                <span>.</span>
+                <span>.</span>
+                <span>.</span>
+            </span>
 
-        <h3>✅ Complaint Submitted</h3>
+        </div>
 
-        <p>
-            <b>Complaint ID:</b>
-            <span id="complaintId"></span>
-        </p>
+        <div id="error"></div>
 
-        <p>
-            <b>Status:</b>
-            <span id="complaintStatus"></span>
-        </p>
+        <!-- =========================
+             AI ANALYSIS
+        ========================= -->
 
-    </div>
+        <div id="result" class="section">
 
-    <!-- STATUS CHECK -->
-
-    <div class="section">
-
-        <h3>🔎 Check Complaint Status</h3>
-
-        <input
-            type="text"
-            id="statusId"
-            placeholder="Enter Complaint ID">
-
-        <button onclick="checkStatus()">
-            🔎 Check Status
-        </button>
-
-        <div id="statusResult"></div>
-
-    </div>
-
-</div>
-
-<script>
-
-let complaintData = {};
-
-/* =========================
-   RENDER BACKEND URL
-========================= */
-
-
-const API_URL = "https://ai-based-complaint-resolution-agent.onrender.com";
-
-/* =========================
-   ANALYZE
-========================= */
-
-async function analyzeComplaint() {
-
-    const complaint =
-        document.getElementById("complaint").value.trim();
-
-    document.getElementById("error").innerText = "";
-
-    if (complaint === "") {
-
-        document.getElementById("error").innerText =
-            "Please enter your complaint.";
-
-        return;
-    }
-
-    try {
-
-        const response = await fetch(
-            API_URL + "/analyze",
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    complaint: complaint
-                })
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error(
-                "Server error: " + response.status
-            );
-        }
-
-        const data = await response.json();
-
-        complaintData = {
-            complaint: complaint,
-            category: data.category,
-            priority: data.priority,
-            department: data.department,
-            resolution: data.resolution
-        };
-
-        document.getElementById("category").innerText =
-            data.category;
-
-        document.getElementById("priority").innerText =
-            data.priority;
-
-        document.getElementById("department").innerText =
-            data.department;
-
-        document.getElementById("resolution").innerText =
-            data.resolution;
-
-        document.getElementById("result").style.display =
-            "block";
-
-    } catch (error) {
-
-        document.getElementById("error").innerText =
-            "❌ Error: " + error.message;
-    }
-}
-
-
-/* =========================
-   SUBMIT
-========================= */
-
-async function submitComplaint() {
-
-    try {
-
-        const response = await fetch(
-            API_URL + "/submit",
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify(complaintData)
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error(
-                "Server error: " + response.status
-            );
-        }
-
-        const data = await response.json();
-
-        document.getElementById("complaintId").innerText =
-            data.complaint_id;
-
-        document.getElementById("complaintStatus").innerText =
-            data.status;
-
-        document.getElementById("submitted").style.display =
-            "block";
-
-        document.getElementById("statusId").value =
-            data.complaint_id;
-
-    } catch (error) {
-
-        document.getElementById("error").innerText =
-            "❌ Submit failed: " + error.message;
-    }
-}
-
-
-/* =========================
-   CHECK STATUS
-========================= */
-
-async function checkStatus() {
-
-    const complaintId =
-        document.getElementById("statusId").value.trim();
-
-    const statusResult =
-        document.getElementById("statusResult");
-
-    statusResult.innerHTML = "";
-
-    if (complaintId === "") {
-
-        statusResult.innerHTML =
-            "<p style='color:red;'>Please enter Complaint ID.</p>";
-
-        return;
-    }
-
-    try {
-
-        const response = await fetch(
-            API_URL + "/status/" +
-            encodeURIComponent(complaintId)
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(
-                data.error || "Complaint not found"
-            );
-        }
-
-        statusResult.innerHTML = `
-
-            <hr>
-
-            <p>
-                <b>Complaint ID:</b>
-                ${data.complaint_id}
-            </p>
+            <h3>🤖 AI Analysis Result</h3>
 
             <p>
                 <b>Category:</b>
-                ${data.category}
+                <span id="category"></span>
             </p>
 
             <p>
                 <b>Priority:</b>
-                ${data.priority}
+                <span id="priority"></span>
             </p>
 
             <p>
                 <b>Department:</b>
-                ${data.department}
+                <span id="department"></span>
             </p>
 
             <p>
-                <b>Resolution:</b>
-                ${data.resolution}
+                <b>Suggested Resolution:</b>
+                <span id="resolution"></span>
+            </p>
+
+            <button onclick="submitComplaint()">
+                📤 Submit Complaint
+            </button>
+
+        </div>
+
+        <!-- =========================
+             SUBMITTED
+        ========================= -->
+
+        <div id="submitted" class="section">
+
+            <h3>✅ Complaint Submitted</h3>
+
+            <p>
+                <b>Complaint ID:</b>
+                <span id="complaintId"></span>
             </p>
 
             <p>
                 <b>Status:</b>
-                ${data.status}
+                <span id="complaintStatus"></span>
             </p>
 
-        `;
+        </div>
 
-    } catch (error) {
+        <!-- =========================
+             STATUS CHECK
+        ========================= -->
 
-        statusResult.innerHTML =
-            "<p style='color:red;'>❌ " +
-            error.message +
-            "</p>";
-    }
-}
+        <div class="section">
 
-</script>
+            <h3>🔎 Check Complaint Status</h3>
+
+            <input
+                type="text"
+                id="statusId"
+                placeholder="Enter Complaint ID">
+
+            <button onclick="checkStatus()">
+                🔎 Check Status
+            </button>
+
+            <div id="statusResult"></div>
+
+        </div>
+
+    </div>
+
+    <script>
+
+        let complaintData = {};
+
+        /* =========================
+           RENDER BACKEND URL
+        ========================= */
+
+        const API_URL =
+            "https://ai-based-complaint-resolution-agent.onrender.com";
+
+
+        /* =========================
+           ANALYZE COMPLAINT
+        ========================= */
+
+        async function analyzeComplaint() {
+
+            const complaint =
+                document.getElementById("complaint").value.trim();
+
+            const error =
+                document.getElementById("error");
+
+            const analyzeBtn =
+                document.getElementById("analyzeBtn");
+
+            const analyzeNormal =
+                document.getElementById("analyzeNormal");
+
+            const analyzeLoading =
+                document.getElementById("analyzeLoading");
+
+            const aiProcessing =
+                document.getElementById("aiProcessing");
+
+            error.innerText = "";
+
+            /* Empty complaint check */
+
+            if (complaint === "") {
+
+                error.innerText =
+                    "Please enter your complaint.";
+
+                return;
+            }
+
+
+            /* =========================
+               START LOADING
+            ========================= */
+
+            analyzeBtn.disabled = true;
+
+            analyzeNormal.style.display = "none";
+
+            analyzeLoading.style.display = "inline-flex";
+
+            aiProcessing.style.display = "block";
+
+            /* Hide old result while analysing */
+
+            document.getElementById("result").style.display = "none";
+
+
+            try {
+
+                /* =========================
+                   SEND TO GEMINI BACKEND
+                ========================= */
+
+                const response = await fetch(
+                    API_URL + "/analyze",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            complaint: complaint
+                        })
+                    }
+                );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Server error: " + response.status
+                    );
+
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                /* =========================
+                   SAVE AI RESULT
+                ========================= */
+
+                complaintData = {
+
+                    complaint: complaint,
+
+                    category: data.category,
+
+                    priority: data.priority,
+
+                    department: data.department,
+
+                    resolution: data.resolution
+
+                };
+
+
+                /* =========================
+                   DISPLAY AI RESULT
+                ========================= */
+
+                document.getElementById("category")
+                    .innerText = data.category;
+
+                document.getElementById("priority")
+                    .innerText = data.priority;
+
+                document.getElementById("department")
+                    .innerText = data.department;
+
+                document.getElementById("resolution")
+                    .innerText = data.resolution;
+
+
+                const result =
+                    document.getElementById("result");
+
+                result.style.display = "block";
+
+                result.classList.remove("result-show");
+
+                void result.offsetWidth;
+
+                result.classList.add("result-show");
+
+
+            } catch (error) {
+
+                document.getElementById("error")
+                    .innerText =
+                    "❌ Error: " + error.message;
+
+            }
+
+
+            /* =========================
+               STOP LOADING
+            ========================= */
+
+            finally {
+
+                analyzeBtn.disabled = false;
+
+                analyzeNormal.style.display =
+                    "inline";
+
+                analyzeLoading.style.display =
+                    "none";
+
+                aiProcessing.style.display =
+                    "none";
+
+            }
+
+        }
+
+
+        /* =========================
+           SUBMIT COMPLAINT
+        ========================= */
+
+        async function submitComplaint() {
+
+            try {
+
+                const response = await fetch(
+                    API_URL + "/submit",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify(
+                                complaintData
+                            )
+                    }
+                );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Server error: " +
+                        response.status
+                    );
+
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                document.getElementById(
+                    "complaintId"
+                ).innerText =
+                    data.complaint_id;
+
+
+                document.getElementById(
+                    "complaintStatus"
+                ).innerText =
+                    data.status;
+
+
+                document.getElementById(
+                    "submitted"
+                ).style.display =
+                    "block";
+
+
+                /* Automatically fill ID */
+
+                document.getElementById(
+                    "statusId"
+                ).value =
+                    data.complaint_id;
+
+
+            } catch (error) {
+
+                document.getElementById(
+                    "error"
+                ).innerText =
+                    "❌ Submit failed: " +
+                    error.message;
+
+            }
+
+        }
+
+
+        /* =========================
+           CHECK STATUS
+        ========================= */
+
+        async function checkStatus() {
+
+            const complaintId =
+                document.getElementById(
+                    "statusId"
+                ).value.trim();
+
+
+            const statusResult =
+                document.getElementById(
+                    "statusResult"
+                );
+
+
+            statusResult.innerHTML = "";
+
+
+            if (complaintId === "") {
+
+                statusResult.innerHTML =
+                    "<p style='color:red;'>Please enter Complaint ID.</p>";
+
+                return;
+            }
+
+
+            try {
+
+                const response = await fetch(
+
+                    API_URL +
+                    "/status/" +
+                    encodeURIComponent(
+                        complaintId
+                    )
+
+                );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "Complaint not found"
+                    );
+
+                }
+
+
+                statusResult.innerHTML = `
+
+                    <hr>
+
+                    <p>
+                        <b>Complaint ID:</b>
+                        ${data.complaint_id}
+                    </p>
+
+                    <p>
+                        <b>Category:</b>
+                        ${data.category}
+                    </p>
+
+                    <p>
+                        <b>Priority:</b>
+                        ${data.priority}
+                    </p>
+
+                    <p>
+                        <b>Department:</b>
+                        ${data.department}
+                    </p>
+
+                    <p>
+                        <b>Resolution:</b>
+                        ${data.resolution}
+                    </p>
+
+                    <p>
+                        <b>Status:</b>
+                        ${data.status}
+                    </p>
+
+                `;
+
+
+            } catch (error) {
+
+                statusResult.innerHTML =
+                    "<p style='color:red;'>❌ " +
+                    error.message +
+                    "</p>";
+
+            }
+
+        }
+
+    </script>
 
 </body>
+
 </html>
